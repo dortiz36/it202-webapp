@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html class="gr__leadingstimulatingset--davidhayes_repl_co"><head>
+  <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+  <link href="style.css" rel="stylesheet" type="text/css" />
+        <title>Media</title>
+
+    </head>
+
+    <style>
+      .button {
+    background-color: grey;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+      </style>
+    <body data-gr-c-s-loaded="true">
+
+        <video id="player" controls="" autoplay=""></video>
+        <button id="capture">Capture</button>
+        <canvas id="canvas" width="320" height="240"></canvas>
+        <div id="imageData"></div>
+        
+        
+
+
+
+      <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+
+        
+        <script>
+          const supported = 'mediaDevices' in navigator;
+          const player = document.getElementById('player');
+          const canvas = document.getElementById('canvas');
+          const context = canvas.getContext('2d');
+          const captureButton = document.getElementById('capture');
+          const dataDiv = document.getElementById('imageData');
+          const visionApiEndpoint = "https://vision.googleapis.com/v1/images:annotate";
+          var requestBody;
+          
+          const constraints = {
+            video: true,
+          };
+        
+          captureButton.addEventListener('click', () => {
+            // Draw the video frame to the canvas.
+            context.drawImage(player, 0, 0, canvas.width, canvas.height);
+            
+            getImageData("FACE_DETECTION");
+          });
+        
+          // Attach the video stream to the video element and autoplay.
+          navigator.mediaDevices.getUserMedia(constraints)
+            .then((stream) => {
+              player.srcObject = stream;
+            });
+            
+            
+          function getImageData(type) {
+             requestBody = {
+                "requests":[
+                  {
+                    "image":{
+                      "content":canvas.toDataURL().split(",")[1]
+                    },
+                    "features":[
+                      {
+                        "type": type,
+                        "maxResults":10
+                      }
+                    ]
+                  }
+                ]
+              };
+            $.ajax({
+                method: "POST",
+                contentType: "application/json",
+                url: visionApiEndpoint + "?key=AIzaSyBvfJaYrmBNr8w9MPqikZCT1mI2dKey5nE",
+                data: JSON.stringify(requestBody)
+              })
+                .done(function(response) {
+                  console.log(response);
+                  $("#imageData").html("<pre>" + JSON.stringify(response)   + "</pre>");
+                
+                  var faceVertices = response.responses[0].faceAnnotations[0].boundingPoly.vertices;
+                  console.log(faceVertices);
+                  var topLeft = faceVertices[0];
+                  var bottomRight = faceVertices[2];
+                  console.log(bottomRight, bottomRight.x, topLeft, topLeft.x);
+                  
+                  var faceWidth = bottomRight.x - topLeft.x;
+                  var faceHeight = bottomRight.y - topLeft.y;
+                  var sourceX = topLeft.x;
+                  var sourceY = topLeft.y;
+                  var destWidth = faceWidth;
+                  var destHeight = faceHeight;
+                  var destX = 0;
+                  var destY = 0;
+                  
+                   var newCanvas = $("<canvas>");
+                   newCanvas.attr("width", faceWidth);
+                   newCanvas.attr("height", faceHeight);
+                   
+                   var newContext = newCanvas[0].getContext("2d");
+
+                  newContext.drawImage(canvas, sourceX, sourceY, faceWidth, faceHeight, destX, destY, faceWidth, faceHeight); 
+                  
+                  $("body").append(newCanvas);
+                  
+                  
+                  
+                  
+                });
+        
+          }
+            
+    
+    
+        </script>
+    
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+     <button>Looking Good</button>
+      <button>Bitch</button>
+    <script>
+        $("button").on("click", function(e) {
+          var words = $(this).text();
+      var utter = new SpeechSynthesisUtterance(words);
+      window.speechSynthesis.speak(utter);
+        })
+    </script>
+    <a href="index.html" class="button">Home</a>
+</body>
+</html>
